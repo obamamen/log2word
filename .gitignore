@@ -39,3 +39,8 @@
 
 # debug information files
 *.dwo
+
+# Clion and cmake files
+.idea/*
+!.idea/codeStyles
+cmake-build-*
