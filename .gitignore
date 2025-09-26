@@ -42,5 +42,5 @@
 
 # Clion and cmake files
 .idea/*
-!.idea/codeStyles
+#!.idea/codeStyles
 cmake-build-*
