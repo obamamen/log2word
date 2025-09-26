@@ -2,7 +2,7 @@
 // Created by moosm on 9/25/2025.
 //
 
-#include "log2word.hpp"
+#include "log2word/log2word.hpp"
 
 #include <fstream>
 #include <iostream>
