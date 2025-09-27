@@ -11,7 +11,7 @@
 #include <string>
 
 
-namespace log2word::common::io::logger
+namespace log2word::common::io
 {
     /// @param list Word list.
     /// @param top [optional] the first 'top' elements to log.

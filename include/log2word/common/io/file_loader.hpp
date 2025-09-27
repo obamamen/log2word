@@ -11,7 +11,7 @@
 #include <string>
 
 
-namespace log2word::common::io::file_loader
+namespace log2word::common::io
 {
     /// @param list List to load the words into (should be empty but could work without, just appends)
     /// @param path File path to load
