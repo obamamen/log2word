@@ -16,6 +16,7 @@
 
 #include "common/io/logger.hpp"
 #include "common/io/file_loader.hpp"
+#include "common/timing/scoped_timer.hpp"
 #include "solver/feedback.hpp"
 #include "solver/precalculate_feedback.hpp"
 
@@ -28,7 +29,7 @@ namespace log2word
 
     public:
 
-    public:
+    public: // should be private, use public for easy debugging
 
         std::vector<std::string> all_words;
         std::vector<std::string> answers;
@@ -50,7 +51,7 @@ namespace log2word
 
         void pre_calculate(const bool debug = false, std::ostream& stream = std::cout)
         {
-            if (debug) stream << "### PRE CALCULATE ###\n";
+            common::timing::scoped_timer t("### PRE CALCULATE FEEDBACK ###", debug);
 
             all_to_all_feedbackLUT.resize(all_words.size());
             all_to_answer_feedbackLUT.resize(all_words.size());
@@ -61,12 +62,15 @@ namespace log2word
                 all_to_answer_feedbackLUT[i].reserve(answers.size());
             }
 
-            if (debug) stream << "### all_to_all_feedback ###\n";
-            solver::compute_feedback_table(all_to_all_feedbackLUT, all_words, all_words,true);
-            if (debug) stream << "### all_to_answer_feedback ###\n";
-            solver::compute_feedback_table(all_to_answer_feedbackLUT,all_words,answers,true);
+            {
+                common::timing::scoped_timer t("### ALL TO ALL FEEDBACK ###", debug);
+                solver::compute_feedback_table(all_to_all_feedbackLUT, all_words, all_words,true);
+            }
 
-            if (debug) stream << "### FINISHED ###\n";
+            {
+                common::timing::scoped_timer t("### ALL TO ANSWER FEEDBACK ###", debug);
+                solver::compute_feedback_table(all_to_answer_feedbackLUT,all_words,answers,true);
+            }
         }
 
         void debug_output_lists(std::ostream& stream = std::cout, const int top = 4) const

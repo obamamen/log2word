@@ -20,6 +20,11 @@ namespace log2word::solver
         const bool debug = false,
         std::ostream& stream = std::cout)
     {
+        target_lut.resize(guess_list.size());
+        for (auto& row : target_lut) {
+            row.resize(answer_list.size());
+        }
+
         common::threading::parallel_for(guess_list.size(),
             [&target_lut, &answer_list, &guess_list](const size_t start, const size_t end) {
                 for (size_t guess = start; guess < end; guess++)

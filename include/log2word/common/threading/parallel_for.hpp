@@ -15,11 +15,11 @@
 
 namespace log2word::common::threading
 {
-    template<typename Func>
-    void parallel_for(const size_t total_items, Func work_func,
-        const bool debug = false,
-        std::ostream& stream = std::cout,
-        size_t num_threads = std::thread::hardware_concurrency())
+    inline void parallel_for(const size_t total_items,
+                             const std::function<void(size_t, size_t)>& work_func,
+                             const bool debug = false,
+                             std::ostream& stream = std::cout,
+                             size_t num_threads = std::thread::hardware_concurrency())
     {
         if (total_items == 0) return;
         if (num_threads == 0) num_threads = 1;
