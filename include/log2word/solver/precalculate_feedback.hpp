@@ -20,17 +20,37 @@ namespace log2word::solver
         const bool debug = false,
         std::ostream& stream = std::cout)
     {
-        target_lut.resize(guess_list.size());
-        for (auto& row : target_lut) {
-            row.resize(answer_list.size());
-        }
+        const size_t answer_list_size = answer_list.size();
+        const size_t guess_list_size = guess_list.size();
+
+        target_lut.reserve(guess_list_size);
+        target_lut.resize(guess_list_size);
+
+        common::threading::parallel_for(guess_list_size,
+            [&target_lut, answer_list_size](const size_t start, const size_t end)
+            {
+                for (size_t i = start; i < end; i++)
+                {
+                    target_lut[i].resize(answer_list_size);
+                }
+            }, false, stream
+        );
 
         common::threading::parallel_for(guess_list.size(),
-            [&target_lut, &answer_list, &guess_list](const size_t start, const size_t end) {
+            [&target_lut, &answer_list, &guess_list, answer_list_size](const size_t start, const size_t end)
+            {
                 for (size_t guess = start; guess < end; guess++)
-                    for (size_t answer = 0; answer < answer_list.size(); answer++)
-                        target_lut[guess].emplace_back(guess_list[guess], answer_list[answer]);
-            }, true
+                {
+                    const std::string& guess_word = guess_list[guess];
+                    auto& feedback_row = target_lut[guess];
+
+                    for (size_t answer = 0; answer < answer_list_size; answer++)
+                    {
+                        feedback_row[answer] = feedback(guess_word, answer_list[answer]);
+                    }
+                }
+            },
+            debug, stream
         );
     }
 }

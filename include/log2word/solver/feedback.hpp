@@ -54,33 +54,48 @@ namespace log2word::solver
 
         feedback(const std::string_view guess, const std::string_view answer)
         {
-            if (guess.length() != answer.length()) return;
-            std::array<bool,5> used{};
+            std::array<uint8_t, 26> counts{};
 
-            for (int i = 0; i < 5; i++)
-            {
-                if (guess[i] == answer[i])
-                {
-                    used[i] = true;
-                    this->set(i,feedback_type::green);
+            #define HANDLE_COUNTS(pos) \
+                counts[answer[pos] - 'a']++;
+
+            HANDLE_COUNTS(0)
+            HANDLE_COUNTS(1)
+            HANDLE_COUNTS(2)
+            HANDLE_COUNTS(3)
+            HANDLE_COUNTS(4)
+
+            #define HANDLE_GREEN(pos) \
+                if (guess[pos] == answer[pos]) \
+                { \
+                    feedback_bits |= (static_cast<uint16_t>(feedback_type::green) << (pos * 2)); \
+                    counts[guess[pos] - 'a']--; \
                 }
-            }
 
-            for (int i = 0; i < 5; i++)
-            {
-                if (this->get(i) != feedback_type::grey) continue;
-                for (int j = 0; j < 5; j++)
-                {
-                    if (used[j] == true) continue;
-                    if (guess[i] == answer[j])
-                    {
-                        this->set(i,feedback_type::yellow);
-                        used[j] = true;
-                        break;
+            HANDLE_GREEN(0)
+            HANDLE_GREEN(1)
+            HANDLE_GREEN(2)
+            HANDLE_GREEN(3)
+            HANDLE_GREEN(4)
+
+            #define HANDLE_YELLOW(pos) \
+                    if (((feedback_bits >> (pos * 2)) & bit_mask) != static_cast<uint16_t>(feedback_type::green) && counts[guess[pos] - 'a'] > 0) \
+                    { \
+                        feedback_bits |= (static_cast<uint16_t>(feedback_type::yellow) << (pos * 2)); \
+                        counts[guess[pos] - 'a']--; \
                     }
-                }
-            }
+
+            HANDLE_YELLOW(0)
+            HANDLE_YELLOW(1)
+            HANDLE_YELLOW(2)
+            HANDLE_YELLOW(3)
+            HANDLE_YELLOW(4)
+
+            #undef HANDLE_COUNTS
+            #undef HANDLE_GREEN
+            #undef HANDLE_YELLOW
         }
+
 
         [[nodiscard]] feedback_type get(const int index) const
         {

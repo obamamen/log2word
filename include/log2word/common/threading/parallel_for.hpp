@@ -16,7 +16,7 @@
 namespace log2word::common::threading
 {
     inline void parallel_for(const size_t total_items,
-                             const std::function<void(size_t, size_t)>& work_func,
+                             const std::function<void(size_t start, size_t end)>& work_func,
                              const bool debug = false,
                              std::ostream& stream = std::cout,
                              size_t num_threads = std::thread::hardware_concurrency())
