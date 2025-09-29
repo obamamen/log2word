@@ -16,6 +16,7 @@
 #include <unordered_map>
 #include <algorithm>
 #include <cmath>
+#include <unordered_set>
 
 
 #include "common/io/logger.hpp"
@@ -33,13 +34,15 @@ namespace log2word
 
     public:
 
-    public: // should be private, use public for easy debugging
+    private: // should be private, use public for easy debugging
 
         std::vector<std::string> all_words;
         std::vector<std::string> answers;
 
         std::vector<std::vector<solver::feedback>> all_to_all_feedbackLUT{};
         std::vector<std::vector<solver::feedback>> all_to_answer_feedbackLUT{};
+
+        std::vector<bool> all_is_in_answers{};
 
     public:
 
@@ -74,6 +77,23 @@ namespace log2word
             {
                 common::timing::scoped_timer t("### ALL TO ANSWER FEEDBACK ###", debug);
                 solver::compute_feedback_table(all_to_answer_feedbackLUT,all_words,answers,true);
+            }
+
+            {
+                common::timing::scoped_timer t("### ALL IS IN ANSWERS  ###", debug);
+                all_is_in_answers.resize(all_words.size());
+                const std::unordered_set answer_set(answers.begin(), answers.end());
+
+                all_is_in_answers.resize(all_words.size());
+
+                common::threading::parallel_for(all_words.size(),
+                [&](const size_t start, const size_t end)
+                {
+                    for (size_t i = start; i < end; ++i)
+                    {
+                        all_is_in_answers[i] = answer_set.count(all_words[i]) > 0;
+                    }
+                });
             }
         }
 
