@@ -11,7 +11,11 @@
 #include <vector>
 #include <iostream>
 #include <fstream>
+#include <iomanip>
 #include <thread>
+#include <unordered_map>
+#include <algorithm>
+#include <cmath>
 
 
 #include "common/io/logger.hpp"
@@ -81,6 +85,61 @@ namespace log2word
 
             std::cout << "Answers [size] = " << answers.size() << '\n';
             common::io::log_list(answers, top, stream);
+        }
+
+        void debug_output_entropy(std::ostream& stream = std::cout, const int top = 10)
+        {
+            common::timing::scoped_timer t("### CALCULATING ENTROPY ###", true);
+
+            std::vector<std::pair<std::string, double>> word_entropy;
+            word_entropy.resize(all_words.size());
+
+            common::threading::parallel_for(all_words.size(),
+                [&](const size_t start, const size_t end) {
+                    for (size_t guess_idx = start; guess_idx < end; ++guess_idx)
+                    {
+                        std::unordered_map<uint16_t, int> pattern_counts;
+
+                        for (size_t answer_idx = 0; answer_idx < answers.size(); ++answer_idx)
+                        {
+                            uint16_t feedback_bits = all_to_answer_feedbackLUT[guess_idx][answer_idx].get_bits();
+                            pattern_counts[feedback_bits]++;
+                        }
+
+                        double entropy = 0.0;
+                        const auto total = static_cast<double>(answers.size());
+
+                        for (const auto& [pattern, count] : pattern_counts)
+                        {
+                            if (count <= 0) continue;
+
+                            const double probability = count / total;
+                            entropy -= probability * std::log2(probability);
+                        }
+
+                        word_entropy[guess_idx] = {all_words[guess_idx], entropy};
+                    }
+                },
+                false
+            );
+
+            const int n = std::min(top, static_cast<int>(word_entropy.size()));
+            std::partial_sort(word_entropy.begin(),
+                              word_entropy.begin() + n,
+                              word_entropy.end(),
+                              [](const auto& a, const auto& b) { return a.second > b.second; });
+
+            stream << "\n=== TOP " << top << " WORDS BY SHANNON ENTROPY ===\n";
+            stream << std::fixed << std::setprecision(4);
+
+            for (int i = 0; i < n; ++i)
+            {
+                stream << (i + 1) << ". " << word_entropy[i].first
+                       << " : " << word_entropy[i].second << " bits\n";
+            }
+
+            stream << "\nBest starting word: " << word_entropy[0].first
+                   << " (entropy: " << word_entropy[0].second << " bits)\n";
         }
 
     private:

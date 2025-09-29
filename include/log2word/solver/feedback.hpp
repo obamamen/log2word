@@ -127,7 +127,23 @@ namespace log2word::solver
         feedback(feedback&&) = default;
         feedback& operator=(const feedback&) = default;
         feedback& operator=(feedback&&) = default;
+
+        [[nodiscard]] uint16_t get_bits() const { return feedback_bits; }
+
+        bool operator==(const feedback& other) const
+        {
+            return feedback_bits == other.feedback_bits;
+        }
     };
 }
+
+template<>
+struct std::hash<log2word::solver::feedback>
+{
+    std::size_t operator()(const log2word::solver::feedback& f) const noexcept
+    {
+        return f.get_bits();
+    }
+};
 
 #endif // LOG2WORD_FEEDBACK
