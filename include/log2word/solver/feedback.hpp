@@ -51,8 +51,12 @@ namespace log2word::solver
     public:
 
         feedback() = default;
-
         feedback(const std::string_view guess, const std::string_view answer)
+            : feedback(guess.data(), answer.data())
+        {
+
+        }
+        feedback(const char* guess, const char* answer)
         {
             std::array<uint8_t, 26> counts{};
 
@@ -95,7 +99,6 @@ namespace log2word::solver
             #undef HANDLE_GREEN
             #undef HANDLE_YELLOW
         }
-
 
         [[nodiscard]] feedback_type get(const int index) const
         {

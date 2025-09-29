@@ -95,33 +95,17 @@ namespace log2word
             word_entropy.resize(all_words.size());
 
             common::threading::parallel_for(all_words.size(),
-                [&](const size_t start, const size_t end) {
-                    for (size_t guess_idx = start; guess_idx < end; ++guess_idx)
+                [&](const size_t start, const size_t end)
+                {
+                    for (size_t guess_idx = start; guess_idx < end; guess_idx++)
                     {
-                        std::unordered_map<uint16_t, int> pattern_counts;
-
-                        for (size_t answer_idx = 0; answer_idx < answers.size(); ++answer_idx)
-                        {
-                            uint16_t feedback_bits = all_to_answer_feedbackLUT[guess_idx][answer_idx].get_bits();
-                            pattern_counts[feedback_bits]++;
-                        }
-
-                        double entropy = 0.0;
-                        const auto total = static_cast<double>(answers.size());
-
-                        for (const auto& [pattern, count] : pattern_counts)
-                        {
-                            if (count <= 0) continue;
-
-                            const double probability = count / total;
-                            entropy -= probability * std::log2(probability);
-                        }
-
-                        word_entropy[guess_idx] = {all_words[guess_idx], entropy};
+                        double entropy = compute_entropy(all_to_answer_feedbackLUT[guess_idx], answers.size());
+                        word_entropy[guess_idx] = {all_words[guess_idx], entropy };
                     }
                 },
                 false
             );
+
 
             const int n = std::min(top, static_cast<int>(word_entropy.size()));
             std::partial_sort(word_entropy.begin(),
@@ -132,7 +116,7 @@ namespace log2word
             stream << "\n=== TOP " << top << " WORDS BY SHANNON ENTROPY ===\n";
             stream << std::fixed << std::setprecision(4);
 
-            for (int i = 0; i < n; ++i)
+            for (int i = 0; i < n; i++)
             {
                 stream << (i + 1) << ". " << word_entropy[i].first
                        << " : " << word_entropy[i].second << " bits\n";
@@ -140,6 +124,28 @@ namespace log2word
 
             stream << "\nBest starting word: " << word_entropy[0].first
                    << " (entropy: " << word_entropy[0].second << " bits)\n";
+        }
+
+        static double compute_entropy(const std::vector<solver::feedback>& feedbacks, const size_t total_answers)
+        {
+            constexpr size_t MAX_FEEDBACKS = 1 << (5 * 2);
+            std::array<int, MAX_FEEDBACKS> counts{};
+
+            for (const auto& fb : feedbacks)
+                ++counts[fb.get_bits()];
+
+            double entropy = 0.0;
+            const auto total = static_cast<double>(total_answers);
+
+            const double inv_total = 1.0 / total;
+            for (const int c : counts)
+            {
+                if (c == 0) continue;
+                const double p = c * inv_total;
+                entropy -= p * std::log2(p);
+            }
+
+            return entropy;
         }
 
     private:
