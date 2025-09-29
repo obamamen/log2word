@@ -19,7 +19,7 @@ namespace log2word::common::io
     static inline void log_list
     (const std::vector<std::string>& list, const int top = 4, std::ostream& stream = std::cout)
     {
-        if (list.size() < top) return;
+        if (list.size() < (size_t)top) return;
         int i = 1;
         for (; i < top; i++)
         {
