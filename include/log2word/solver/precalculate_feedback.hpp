@@ -46,7 +46,7 @@ namespace log2word::solver
 
                     for (size_t answer = 0; answer < answer_list_size; answer++)
                     {
-                        feedback_row[answer] = feedback(guess_word.c_str(), answer_list[answer].c_str());
+                        feedback_row[answer] = feedback(guess_word, answer_list[answer]);
                     }
                 }
             },
