@@ -9,6 +9,8 @@
 
 #include "log2word/solver/feedback.hpp"
 
+// github push test
+
 int main()
 {
       log2word::core c("data/all.txt","data/answers.txt");
