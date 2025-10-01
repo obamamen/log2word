@@ -34,7 +34,7 @@ namespace log2word
 
     public:
 
-    private: // should be private, use public for easy debugging
+    private:
 
         std::vector<std::string> all_words;
         std::vector<std::string> answers;
