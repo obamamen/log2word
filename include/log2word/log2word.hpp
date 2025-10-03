@@ -159,22 +159,18 @@ namespace log2word
                    << " (entropy: " << word_entropy[0].second << " bits)\n";
         }
 
-        double compute_entropy(const size_t guess, const size_t total_answers)
+        [[nodiscard]] double compute_entropy(const size_t guess, const size_t total_answers) const
         {
-            std::vector<solver::feedback> feedbacks{};
-
             const size_t size = this->answers.size();
-            feedbacks.reserve(size);
-            for (size_t i = 0; i < size; ++i)
-            {
-                feedbacks.emplace_back(all_to_all_feedbackLUT[guess][answers[i]]);
-            }
 
             constexpr size_t MAX_FEEDBACKS = 1 << (5 * 2);
             std::array<int, MAX_FEEDBACKS> counts{};
 
-            for (const auto& fb : feedbacks)
-                ++counts[fb.get_bits()];
+            for (size_t i = 0; i < size; ++i)
+            {
+                ++counts[all_to_all_feedbackLUT[guess][answers[i]].get_bits()];
+            }
+
 
             double entropy = 0.0;
             const auto total = static_cast<double>(total_answers);
