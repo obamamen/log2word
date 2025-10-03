@@ -31,6 +31,12 @@ namespace log2word
 
     class core
     {
+        struct word_score
+        {
+            size_t index{};
+            double entropy{};
+            double score{};
+        };
 
     public:
 
@@ -58,10 +64,16 @@ namespace log2word
 
             std::unordered_map<std::string_view, size_t> word_to_index;
             const auto& wl = get_word_list();
-            for (size_t i = 0; i < wl.size(); ++i) { word_to_index[wl[i]] = i; }
+            for (size_t i = 0; i < wl.size(); ++i)
+            {
+                word_to_index[wl[i]] = i;
+            }
             const auto& al = get_answer_list();
             answers.resize(al.size());
-            for (size_t i = 0; i < al.size(); ++i) { answers[i] = word_to_index[al[i]]; }
+            for (size_t i = 0; i < al.size(); ++i)
+            {
+                answers[i] = word_to_index[al[i]];
+            }
         }
 
         ~core() = default;
@@ -88,12 +100,12 @@ namespace log2word
             }
 
             {
-                common::timing::scoped_timer t("### ALL TO ALL FEEDBACK ###", debug);
+                common::timing::scoped_timer _("### ALL TO ALL FEEDBACK ###", debug);
                 solver::compute_feedback_table(all_to_all_feedbackLUT, all_words_list, all_words_list,true);
             }
 
             {
-                common::timing::scoped_timer t("### ALL IS IN ANSWERS ###", debug);
+                common::timing::scoped_timer _("### ALL IS IN ANSWERS ###", debug);
                 all_is_in_answers.resize(all_words_list.size());
                 const std::unordered_set answer_set(answers_list.begin(), answers_list.end());
 
