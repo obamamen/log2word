@@ -33,9 +33,29 @@ namespace log2word
     {
         struct word_score
         {
-            size_t index{};
             double entropy{};
             double score{};
+
+            [[nodiscard]] std::string to_string() const
+            {
+                return "(" + std::to_string(score) + ") | " + std::to_string(entropy);
+            }
+
+            [[nodiscard]] static bool better(const word_score &a, const word_score &b)
+            {
+                return a.score > b.score;
+            }
+        };
+
+        struct unordered_word_score
+        {
+            word_score word_score{};
+            size_t index{};
+
+            [[nodiscard]] static bool better(const unordered_word_score &a, const unordered_word_score &b)
+            {
+                return word_score::better(a.word_score, b.word_score);
+            }
         };
 
     public:
@@ -68,20 +88,6 @@ namespace log2word
             {
                 throw std::runtime_error("failed to load answer_list");
             }
-
-
-            std::unordered_map<std::string_view, size_t> word_to_index;
-            const auto& wl = get_word_list();
-            for (size_t i = 0; i < wl.size(); ++i)
-            {
-                word_to_index[wl[i]] = i;
-            }
-            const auto& al = get_answer_list();
-            answers.resize(al.size());
-            for (size_t i = 0; i < al.size(); ++i)
-            {
-                answers[i] = word_to_index[al[i]];
-            }
         }
 
         ~core() = default;
@@ -99,6 +105,19 @@ namespace log2word
         void pre_calculate(const bool debug = false, std::ostream& stream = std::cout)
         {
             common::timing::scoped_timer t("### PRE CALCULATE FEEDBACK ###", debug, stream);
+
+            std::unordered_map<std::string_view, size_t> word_to_index;
+            const auto& wl = get_word_list();
+            for (size_t i = 0; i < wl.size(); ++i)
+            {
+                word_to_index[wl[i]] = i;
+            }
+            const auto& al = get_answer_list();
+            answers.resize(al.size());
+            for (size_t i = 0; i < al.size(); ++i)
+            {
+                answers[i] = word_to_index[al[i]];
+            }
 
             all_to_all_feedbackLUT.resize(all_words_list.size());
 
@@ -144,57 +163,84 @@ namespace log2word
             common::io::log_list(this->get_answer_list(), top, stream);
         }
 
-        void debug_output_entropy(std::ostream& stream = std::cout, const int top = 10)
+        void debug_output_entropy(std::ostream& stream = std::cout, const size_t top = 10)
         {
             common::timing::scoped_timer t("### CALCULATING ENTROPY ###", true);
 
-            std::vector<std::pair<std::string, double>> word_entropy;
-            word_entropy.resize(all_words_list.size());
-
-            common::threading::parallel_for(all_words_list.size(),
-                [&](const size_t start, const size_t end)
-                {
-                    for (size_t guess_idx = start; guess_idx < end; guess_idx++)
-                    {
-                        double entropy = compute_entropy(guess_idx, answers.size());
-                        word_entropy[guess_idx] = {all_words_list[guess_idx], entropy };
-                    }
-                },
-                false
-            );
-
-
-            const int n = std::min(top, static_cast<int>(word_entropy.size()));
-            std::partial_sort(word_entropy.begin(),
-                              word_entropy.begin() + n,
-                              word_entropy.end(),
-                              [](const auto& a, const auto& b) { return a.second > b.second; });
-
-            stream << "\n=== TOP " << top << " WORDS BY SHANNON ENTROPY ===\n";
-            stream << std::fixed << std::setprecision(4);
-
-            for (int i = 0; i < n; i++)
+            const auto scores = get_word_scores_sorted(answers,top);
+            for (size_t i = 0; i < top; ++i)
             {
-                stream << (i + 1) << ". " << word_entropy[i].first
-                       << " : " << word_entropy[i].second << " bits\n";
+                stream << i << ". " << get_word_list()[scores[i].index] << " ; " << scores[i].word_score.to_string() <<'\n';
             }
-
-            stream << "\nBest starting word: " << word_entropy[0].first
-                   << " (entropy: " << word_entropy[0].second << " bits)\n";
         }
 
-        [[nodiscard]] double compute_entropy(const size_t guess, const size_t total_answers) const
+        [[nodiscard]] std::vector<unordered_word_score> get_word_scores_sorted(const std::vector<size_t>& possible_answers, const size_t top = 0) const
         {
+            const auto scores = compute_scores(possible_answers);
+            std::vector<unordered_word_score> sorted_scores(scores.size());
+            for (size_t i = 0; i < scores.size(); ++i)
+            {
+                sorted_scores[i].word_score = scores[i];
+                sorted_scores[i].index = i;
+            }
+
+            if (top == 0)
+            {
+                std::sort(
+                    sorted_scores.begin(),
+                    sorted_scores.end(),
+                    unordered_word_score::better
+                );
+            } else
+            {
+                std::partial_sort(
+                    sorted_scores.begin(),
+                    sorted_scores.begin() + top,
+                    sorted_scores.end(),
+                    unordered_word_score::better
+                );
+            }
+
+            return sorted_scores;
+        }
+
+        [[nodiscard]] std::vector<word_score> compute_scores(const std::vector<size_t>& possible_answers) const
+        {
+            const size_t size = get_word_list().size();
+            std::vector<word_score> scores(size);
+
+            common::threading::parallel_for(size,
+            [&](const size_t start, const size_t end)
+            {
+                for (size_t guess_idx = start; guess_idx < end; guess_idx++)
+                {
+                    scores[guess_idx] = compute_score(guess_idx,possible_answers);
+                }
+            });
+
+            return scores;
+        }
+
+        [[nodiscard]] word_score compute_score(const size_t index, const std::vector<size_t>& possible_answers) const
+        {
+            auto score = word_score{};
+            score.entropy = compute_entropy(index, possible_answers);
+            score.score = score.entropy;
+            return score;
+        }
+
+        [[nodiscard]] double compute_entropy(const size_t guess, const std::vector<size_t>& possible_answers) const
+        {
+            const size_t total_answers = possible_answers.size();
             const size_t size = this->answers.size();
 
             constexpr size_t MAX_FEEDBACKS = 1 << (5 * 2);
             std::array<int, MAX_FEEDBACKS> counts{};
 
-            for (size_t i = 0; i < size; ++i)
+            for (size_t i = 0; i < total_answers; ++i)
             {
-                ++counts[all_to_all_feedbackLUT[guess][answers[i]].get_bits()];
+                ++counts[all_to_all_feedbackLUT[guess][possible_answers[i]].get_bits()];
             }
-
 
             double entropy = 0.0;
             const auto total = static_cast<double>(total_answers);
