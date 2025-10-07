@@ -26,7 +26,7 @@ namespace log2word::common::io
         {
             std::getline(file, line);
 
-            if (file.fail()) return false;
+            if (file.fail()) break;
             if (file.eof()) break;
 
             if (line.empty()) continue;

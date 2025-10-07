@@ -57,10 +57,18 @@ namespace log2word
 
         explicit core(const std::string& all_words_path, const std::string& answers_path = "")
         {
-            common::io::load_word_file_to_list(all_words_list, all_words_path);
 
-            common::io::load_word_file_to_list(get_answer_list(),
-                (answers_path.empty()) ? all_words_path : answers_path);
+            if (!common::io::load_word_file_to_list(all_words_list, all_words_path))
+            {
+                throw std::runtime_error("failed to load all_words_list");
+            }
+
+            if (!(common::io::load_word_file_to_list(get_answer_list(),
+                (answers_path.empty()) ? all_words_path : answers_path)))
+            {
+                throw std::runtime_error("failed to load answer_list");
+            }
+
 
             std::unordered_map<std::string_view, size_t> word_to_index;
             const auto& wl = get_word_list();
@@ -90,22 +98,22 @@ namespace log2word
 
         void pre_calculate(const bool debug = false, std::ostream& stream = std::cout)
         {
-            common::timing::scoped_timer t("### PRE CALCULATE FEEDBACK ###", debug);
+            common::timing::scoped_timer t("### PRE CALCULATE FEEDBACK ###", debug, stream);
 
             all_to_all_feedbackLUT.resize(all_words_list.size());
 
             for (size_t i = 0; i < all_words_list.size(); ++i)
             {
-                all_to_all_feedbackLUT[i].reserve(all_words_list.size());
+                all_to_all_feedbackLUT[i].resize(all_words_list.size());
             }
 
             {
-                common::timing::scoped_timer _("### ALL TO ALL FEEDBACK ###", debug);
+                common::timing::scoped_timer _("### ALL TO ALL FEEDBACK ###", debug, stream);
                 solver::compute_feedback_table(all_to_all_feedbackLUT, all_words_list, all_words_list,true);
             }
 
             {
-                common::timing::scoped_timer _("### ALL IS IN ANSWERS ###", debug);
+                common::timing::scoped_timer _("### ALL IS IN ANSWERS ###", debug, stream);
                 all_is_in_answers.resize(all_words_list.size());
                 const std::unordered_set answer_set(answers_list.begin(), answers_list.end());
 
@@ -120,6 +128,10 @@ namespace log2word
                     }
                 });
             }
+
+            std::cout << "words=" << all_words_list.size()
+                << " answers=" << answers.size()
+                << " feedbackLUT=" << all_to_all_feedbackLUT.size() << std::endl;
         }
 
         void debug_output_lists(std::ostream& stream = std::cout, const int top = 4) const

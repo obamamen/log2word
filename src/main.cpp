@@ -11,7 +11,7 @@
 
 int main()
 {
-      log2word::core c("data/all.txt","data/answers.txt");
+      log2word::core c("../data/all.txt","../data/answers.txt");
       c.pre_calculate(true);
       c.debug_output_entropy();
 }
