@@ -174,7 +174,9 @@ namespace log2word
             }
         }
 
-        [[nodiscard]] std::vector<unordered_word_score> get_word_scores_sorted(const std::vector<size_t>& possible_answers, const size_t top = 0) const
+        [[nodiscard]] std::vector<unordered_word_score> get_word_scores_sorted(
+            const std::vector<size_t>& possible_answers,
+            const size_t top = 0) const
         {
             const auto scores = compute_scores(possible_answers);
             std::vector<unordered_word_score> sorted_scores(scores.size());
@@ -204,7 +206,8 @@ namespace log2word
             return sorted_scores;
         }
 
-        [[nodiscard]] std::vector<word_score> compute_scores(const std::vector<size_t>& possible_answers) const
+        [[nodiscard]] std::vector<word_score> compute_scores(
+            const std::vector<size_t>& possible_answers) const
         {
             const size_t size = get_word_list().size();
             std::vector<word_score> scores(size);
@@ -224,28 +227,68 @@ namespace log2word
         [[nodiscard]] word_score compute_score(const size_t index, const std::vector<size_t>& possible_answers) const
         {
             auto score = word_score{};
-            score.entropy = compute_entropy(index, possible_answers);
-            score.score = score.entropy;
+            const size_t total = possible_answers.size();
+
+            const auto counts = compute_feedback_counts(index, possible_answers);
+
+            score.entropy = compute_entropy_from_counts(counts, total);
+
+            const bool is_answer = all_is_in_answers[index];
+
+            const double expected_log = compute_expected_log_remaining(counts, total, is_answer);
+            const double log_total = std::log2(static_cast<double>(total));
+
+            score.score = log_total - expected_log;
+
             return score;
         }
 
         [[nodiscard]] double compute_entropy(const size_t guess, const std::vector<size_t>& possible_answers) const
         {
-            const size_t total_answers = possible_answers.size();
-            const size_t size = this->answers.size();
+            const auto counts = compute_feedback_counts(guess, possible_answers);
+            return compute_entropy_from_counts(counts, possible_answers.size());
+        }
 
+        void limit_guesses(const size_t guess, const solver::feedback& feedback_received, std::vector<size_t>& possible_answers) const
+        {
+            const auto target_bits = feedback_received.get_bits();
+            size_t write = 0;
+
+            for (size_t read = 0; read < possible_answers.size(); ++read)
+            {
+                const size_t answer_idx = possible_answers[read];
+                const bool keep = all_to_all_feedbackLUT[guess][answer_idx].get_bits() == target_bits;
+
+                possible_answers[write] = answer_idx;
+                write += keep;
+            }
+
+            possible_answers.resize(write);
+        }
+
+    private:
+        [[nodiscard]] std::array<int, 1 << (5 * 2)> compute_feedback_counts(
+            const size_t guess,
+            const std::vector<size_t>& possible_answers) const
+        {
             constexpr size_t MAX_FEEDBACKS = 1 << (5 * 2);
             std::array<int, MAX_FEEDBACKS> counts{};
 
-            for (size_t i = 0; i < total_answers; ++i)
+            for (const auto possible_answer : possible_answers)
             {
-                ++counts[all_to_all_feedbackLUT[guess][possible_answers[i]].get_bits()];
+                ++counts[all_to_all_feedbackLUT[guess][possible_answer].get_bits()];
             }
 
-            double entropy = 0.0;
-            const auto total = static_cast<double>(total_answers);
+            return counts;
+        }
 
-            const double inv_total = 1.0 / total;
+        [[nodiscard]] static double compute_entropy_from_counts(
+            const std::array<int, 1 << (5 * 2)>& counts,
+            const size_t total)
+        {
+            double entropy = 0.0;
+            const double inv_total = 1.0 / (double)total;
+
             for (const int c : counts)
             {
                 if (c == 0) continue;
@@ -256,7 +299,28 @@ namespace log2word
             return entropy;
         }
 
-    private:
+        [[nodiscard]] static double compute_expected_log_remaining(
+            const std::array<int, 1 << (5 * 2)>& counts,
+            const size_t total,
+            const bool is_answer)
+        {
+            double expected = 0.0;
+            const double inv_total = 1.0 / (double)total;
+
+            for (const int c : counts)
+            {
+                if (c == 0) continue;
+                const double p = c * inv_total;
+
+                const int remaining = is_answer ? std::max(0, c - 1) : c;
+                if (remaining > 0)
+                {
+                    expected += p * std::log2(static_cast<double>(remaining));
+                }
+            }
+
+            return expected;
+        }
 
     };
 }
