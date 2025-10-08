@@ -92,6 +92,8 @@ namespace log2word
 
         ~core() = default;
 
+        [[nodiscard]] size_t answer_to_word(const size_t answer) const { return answers[answer]; }
+
         [[nodiscard]] std::vector<std::string>& get_answer_list() { return answers_list; }
         [[nodiscard]] const std::vector<std::string>& get_answer_list() const { return answers_list; }
 
@@ -203,6 +205,12 @@ namespace log2word
                 );
             }
 
+            if (possible_answers.size() == 1)
+            {
+                sorted_scores[0].index = possible_answers[0];
+                sorted_scores[0].word_score = compute_score(possible_answers[0],possible_answers);
+            }
+
             return sorted_scores;
         }
 
@@ -212,16 +220,29 @@ namespace log2word
             const size_t size = get_word_list().size();
             std::vector<word_score> scores(size);
 
-            common::threading::parallel_for(size,
-            [&](const size_t start, const size_t end)
+            const bool only_answers = possible_answers.size() <= 15;
+            if (!only_answers)
             {
-                for (size_t guess_idx = start; guess_idx < end; guess_idx++)
+                common::threading::parallel_for(size,
+                [&](const size_t start, const size_t end)
                 {
-                    scores[guess_idx] = compute_score(guess_idx,possible_answers);
-                }
-            });
+                    for (size_t guess_idx = start; guess_idx < end; guess_idx++)
+                    {
+                        scores[guess_idx] = compute_score(guess_idx,possible_answers);
+                    }
+                });
 
-            return scores;
+                return scores;
+            }
+            else
+            {
+                for (const auto guess_idx : possible_answers)
+                {
+                    scores[guess_idx] = compute_score(guess_idx, possible_answers);
+                }
+
+                return scores;
+            }
         }
 
         [[nodiscard]] word_score compute_score(const size_t index, const std::vector<size_t>& possible_answers) const
@@ -238,7 +259,7 @@ namespace log2word
             const double expected_log = compute_expected_log_remaining(counts, total, is_answer);
             const double log_total = std::log2(static_cast<double>(total));
 
-            score.score = log_total - expected_log;
+            score.score = score.entropy;
 
             return score;
         }
@@ -257,14 +278,15 @@ namespace log2word
             for (size_t read = 0; read < possible_answers.size(); ++read)
             {
                 const size_t answer_idx = possible_answers[read];
-                const bool keep = all_to_all_feedbackLUT[guess][answer_idx].get_bits() == target_bits;
-
-                possible_answers[write] = answer_idx;
-                write += keep;
+                if (all_to_all_feedbackLUT[guess][answer_idx].get_bits() == target_bits)
+                {
+                    possible_answers[write++] = answer_idx;
+                }
             }
 
             possible_answers.resize(write);
         }
+
 
     private:
         [[nodiscard]] std::array<int, 1 << (5 * 2)> compute_feedback_counts(
