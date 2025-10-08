@@ -259,7 +259,7 @@ namespace log2word
             const double expected_log = compute_expected_log_remaining(counts, total, is_answer);
             const double log_total = std::log2(static_cast<double>(total));
 
-            score.score = score.entropy;
+            score.score = score.entropy + (log_total - expected_log);
 
             return score;
         }
