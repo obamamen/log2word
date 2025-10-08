@@ -104,7 +104,14 @@ int main()
             {
                 int count = distribution[i];
                 double pct = 100.0 * count / count_found;
-                std::cout << (i + 1) << ": " << count << " (" << pct << "%)\n";
+                std::ostringstream oss;
+                oss << (i + 1) << ": " << count << " (" << pct << "%)";
+                std::cout << std::left << std::setw(18) << oss.str()<<">";
+                for (int i = 0; i < pct; ++i)
+                {
+                    std::cout << '|';
+                }
+                std::cout << "\n";
             }
         }
 
