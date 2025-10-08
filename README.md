@@ -1,10 +1,12 @@
 # log2word (WIP)
 
 ## Current output:
+~~~
+[### ALL TO ALL FEEDBACK ###] completed in 227 ms
 
-[### PRE CALCULATE FEEDBACK ###] started
+words=12971 answers=2315 feedbackLUT=12971
 
-[### PRE CALCULATE FEEDBACK ###] completed in 369 ms
+[### PRE CALCULATE FEEDBACK ###] completed in 333 ms
 
 [### TEST WORDLE WORDS ###] started
 
@@ -16,16 +18,20 @@ avg: 3.48
 
 dist:
 
-1: 0 (0%)
 
-2: 6 (4.8%)
+1: 0 (0%)           >
 
-3: 67 (53.6%)
+2: 3 (2.4%)         >|||
 
-4: 39 (31.2%)
+3: 65 (52%)         >||||||||||||||||||||||||||||||||||||||||||||||||||||
 
-5: 12 (9.6%)
+4: 51 (40.8%)       >|||||||||||||||||||||||||||||||||||||||||
 
-6: 1 (0.8%)
+5: 6 (4.8%)         >|||||
 
-[### TEST WORDLE WORDS ###] completed in 2385 ms
+6: 0 (0%)           >
+
+
+[### TEST WORDLE WORDS ###] completed in 2025 ms
+
+Process finished with exit code 0
