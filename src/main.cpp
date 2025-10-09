@@ -67,6 +67,7 @@ int main()
 
     std::mt19937 rng(std::random_device{}());
     std::uniform_int_distribution<size_t> dist(0, c.get_answer_list().size() - 1);
+    std::vector<size_t> fails{};
 
     {
         size_t count_found{};
@@ -88,6 +89,7 @@ int main()
             }
             else
             {
+                fails.push_back(index);
                 ++count_failed;
             }
         }
@@ -112,6 +114,15 @@ int main()
                     std::cout << '|';
                 }
                 std::cout << "\n";
+            }
+
+            if (fails.size() > 0)
+            {
+                std::cout << fails.size() << " fails:\n";
+                for (size_t i = 0; i < fails.size(); ++i)
+                {
+                    std::cout << fails[i] << ':' << c.get_word(c.answer_to_word(fails[i])) << "\n";
+                }
             }
         }
 
