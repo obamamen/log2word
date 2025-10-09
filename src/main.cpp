@@ -24,7 +24,7 @@
 int main()
 {
     log2word::core c("../data/all.txt","../data/answers.txt");
-    c.pre_calculate(true);
+    c.pre_calculate(false);
 
     while (true)
     {

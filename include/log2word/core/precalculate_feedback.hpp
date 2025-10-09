@@ -33,7 +33,7 @@ namespace log2word
                 {
                     target_lut[i].resize(answer_list_size);
                 }
-            }, false, stream
+            }, debug, stream
         );
 
         common::threading::parallel_for(guess_list.size(),

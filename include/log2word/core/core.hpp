@@ -38,7 +38,7 @@ namespace log2word
 
             [[nodiscard]] std::string to_string() const
             {
-                return "(" + std::to_string(score) + ") | " + std::to_string(entropy);
+                return "[" + std::to_string(score) + "]"; // | " + std::to_string(entropy);
             }
 
             [[nodiscard]] static bool better(const word_score &a, const word_score &b)
@@ -134,7 +134,7 @@ namespace log2word
 
             {
                 common::timing::scoped_timer _("### ALL TO ALL FEEDBACK ###", debug, stream);
-                compute_feedback_table(all_to_all_feedbackLUT, all_words_list, all_words_list,true);
+                compute_feedback_table(all_to_all_feedbackLUT, all_words_list, all_words_list,debug);
             }
 
             {
@@ -151,9 +151,10 @@ namespace log2word
                     {
                         all_is_in_answers[i] = answer_set.count(all_words_list[i]) > 0;
                     }
-                });
+                },debug);
             }
 
+            if (debug)
             std::cout << "words=" << all_words_list.size()
                 << " answers=" << answers.size()
                 << " feedbackLUT=" << all_to_all_feedbackLUT.size() << std::endl;

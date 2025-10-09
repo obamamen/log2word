@@ -96,7 +96,7 @@ namespace log2word::solver
         return {};
     }
 
-    inline game_result game_user(core& core, const size_t top = 5)
+    inline game_result game_user(core& core, const size_t top = 10)
     {
         std::vector<size_t> possible_answers = core.get_answers_indices();
 
@@ -105,7 +105,7 @@ namespace log2word::solver
             auto top_list = core.get_word_scores_sorted(possible_answers);
             for (int i = 1; i <= std::min(top,top_list.size()); ++i)
             {
-                std::cout << "#" << i << " " << core.get_word(top_list[i-1].index) << "\n";
+                std::cout << "#" << i << " " << core.get_word(top_list[i-1].index) << " " << top_list[i-1].word_score.to_string() << "\n";
             }
             size_t best_guess = get_user_guess(core);
 
