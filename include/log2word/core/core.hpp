@@ -213,7 +213,7 @@ namespace log2word
             if (possible_answers.size() == 1)
             {
                 sorted_scores[0].index = possible_answers[0];
-                sorted_scores[0].word_score.score = DBL_MAX;
+                sorted_scores[0].word_score.score = 1.0;
             }
 
             return sorted_scores;
