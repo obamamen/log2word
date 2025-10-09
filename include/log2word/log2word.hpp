@@ -15,8 +15,10 @@
 #include <thread>
 #include <unordered_map>
 #include <algorithm>
+#include <cfloat>
 #include <cmath>
 #include <unordered_set>
+#include <limits>
 
 
 #include "common/io/logger.hpp"
@@ -220,7 +222,7 @@ namespace log2word
             const size_t size = get_word_list().size();
             std::vector<word_score> scores(size);
 
-            const bool only_answers = possible_answers.size() <= 15;
+            const bool only_answers = possible_answers.size() <= 32;
             if (!only_answers)
             {
                 common::threading::parallel_for(size,
