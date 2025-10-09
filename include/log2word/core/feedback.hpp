@@ -15,7 +15,7 @@
 #include <string_view>
 
 
-namespace log2word::solver
+namespace log2word
 {
     struct feedback
     {
@@ -137,13 +137,20 @@ namespace log2word::solver
         {
             return feedback_bits == other.feedback_bits;
         }
+
+        bool operator()()
+        {
+            for (int i = 0; i < 5; i++)
+                if (get(i) != feedback_type::green) return false;
+            return true;
+        }
     };
 }
 
 template<>
-struct std::hash<log2word::solver::feedback>
+struct std::hash<log2word::feedback>
 {
-    std::size_t operator()(const log2word::solver::feedback& f) const noexcept
+    std::size_t operator()(const log2word::feedback& f) const noexcept
     {
         return f.get_bits();
     }

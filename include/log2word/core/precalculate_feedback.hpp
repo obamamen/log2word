@@ -11,7 +11,7 @@
 #include "feedback.hpp"
 #include "log2word/common/threading/parallel_for.hpp"
 
-namespace log2word::solver
+namespace log2word
 {
     inline void compute_feedback_table(
         std::vector<std::vector<feedback>>& target_lut,
