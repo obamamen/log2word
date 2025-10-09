@@ -66,6 +66,7 @@ namespace log2word::solver
                 if (itter == core.get_word_list().end())
                 {
                     std::cout << "unguessable word, try again\n";
+                    continue;
                 }
 
                 return itter - core.get_word_list().begin();
