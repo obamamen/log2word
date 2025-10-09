@@ -34,6 +34,11 @@ namespace log2word::common::timing
             }
         }
 
+        explicit scoped_timer() : log(false)
+        {
+            start_time = std::chrono::high_resolution_clock::now();
+        }
+
         scoped_timer(const scoped_timer&) = delete;
         scoped_timer(scoped_timer&&) = delete;
         scoped_timer& operator=(const scoped_timer&) = delete;
@@ -52,6 +57,13 @@ namespace log2word::common::timing
         void do_log(const bool do_log = false)
         {
             log = do_log;
+        }
+
+        unsigned long long ms()
+        {
+            const auto end_time = std::chrono::high_resolution_clock::now();
+            const auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end_time - start_time);
+            return duration.count();
         }
     };
 }

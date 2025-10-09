@@ -24,7 +24,11 @@
 int main()
 {
     log2word::core c("../data/all.txt","../data/answers.txt");
-    c.pre_calculate(false);
+    {
+        log2word::common::timing::scoped_timer st{};
+        c.pre_calculate(false);
+        std::cout << "(precalculated in " << st.ms() << " ms)\n" << std::endl;
+    }
 
     while (true)
     {
