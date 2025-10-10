@@ -106,6 +106,7 @@ namespace log2word::solver
             common::timing::scoped_timer st{};
             auto top_list = core.get_word_scores_sorted(possible_answers);
             std::cout << "(found in " << st.ms() << " ms)" << std::endl;
+            std::cout << "Possible answers: " << possible_answers.size() << std::endl;
             for (int i = 1; i <= std::min(top,top_list.size()); ++i)
             {
                 std::cout << "#" << i << " " << core.get_word(top_list[i-1].index) << " " << top_list[i-1].word_score.to_string() << "\n";
