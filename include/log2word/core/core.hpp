@@ -219,13 +219,50 @@ namespace log2word
             return sorted_scores;
         }
 
+        [[nodiscard]] double compute_expected_future_entropy(
+            const size_t guess,
+            const std::vector<size_t>& possible_answers,
+            const size_t sample_limit = 1
+        ) const
+        {
+            const auto counts = compute_feedback_counts(guess, possible_answers);
+            const size_t total = possible_answers.size();
+            double expected_future_entropy = 0.0;
+
+            for (size_t f = 0; f < counts.size(); ++f)
+            {
+                int c = counts[f];
+                if (c <= 1) continue;
+                double p = double(c) / double(total);
+
+                double sub_entropy = 0.0;
+                size_t seen = 0;
+
+                for (const auto idx : possible_answers)
+                {
+                    if (all_to_all_feedbackLUT[guess][idx].get_bits() == f)
+                    {
+                        sub_entropy += compute_entropy(idx, possible_answers);
+                        if (++seen >= sample_limit) break;
+                    }
+                }
+
+                if (seen > 0)
+                    expected_future_entropy += p * (sub_entropy / double(seen));
+            }
+
+            return expected_future_entropy;
+        }
+
+    public:
         [[nodiscard]] std::vector<word_score> compute_scores(
             const std::vector<size_t>& possible_answers) const
         {
             const size_t size = get_word_list().size();
             std::vector<word_score> scores(size);
 
-            const bool only_answers = possible_answers.size() <= 32;
+            const bool only_answers = possible_answers.size() <= 24;
+            const bool do_future_entropy = (possible_answers.size() <= 128);
             if (!only_answers)
             {
                 common::threading::parallel_for(size,
@@ -233,7 +270,14 @@ namespace log2word
                 {
                     for (size_t guess_idx = start; guess_idx < end; guess_idx++)
                     {
-                        scores[guess_idx] = compute_score(guess_idx,possible_answers);
+                        double H = compute_entropy(guess_idx, possible_answers);
+                        double future_H = 0.0;
+
+                        if (do_future_entropy)
+                            future_H = compute_expected_future_entropy(guess_idx, possible_answers);
+
+                        scores[guess_idx].entropy = H;
+                        scores[guess_idx].score = H - 1 * future_H;
                     }
                 });
 
@@ -243,30 +287,34 @@ namespace log2word
             {
                 for (const auto guess_idx : possible_answers)
                 {
-                    scores[guess_idx] = compute_score(guess_idx, possible_answers);
+                    double H = compute_entropy(guess_idx, possible_answers);
+                    double future_H = 0.0;
+
+                    if (do_future_entropy)
+                        future_H = compute_expected_future_entropy(guess_idx, possible_answers);
+
+                    scores[guess_idx].entropy = H;
+                    scores[guess_idx].score = H - 1 * future_H;
                 }
 
                 return scores;
             }
         }
 
-        [[nodiscard]] word_score compute_score(const size_t index, const std::vector<size_t>& possible_answers) const
+        [[nodiscard]] word_score compute_score(
+            const size_t index,
+            const std::vector<size_t>& possible_answers) const
         {
-            auto score = word_score{};
-            const size_t total = possible_answers.size();
+            double H = compute_entropy(index, possible_answers);
+            double future_H = 0.0;
 
-            const auto counts = compute_feedback_counts(index, possible_answers);
+            if (possible_answers.size() <= 24)
+                future_H = compute_expected_future_entropy(index, possible_answers);
 
-            score.entropy = compute_entropy_from_counts(counts, total);
-
-            const bool is_answer = all_is_in_answers[index];
-
-            const double expected_log = compute_expected_log_remaining(counts, total, is_answer);
-            const double log_total = std::log2(static_cast<double>(total));
-
-            score.score = score.entropy;
-
-            return score;
+            word_score s;
+            s.entropy = H;
+            s.score = H - 1 * future_H;
+            return s;
         }
 
         [[nodiscard]] double compute_entropy(const size_t guess, const std::vector<size_t>& possible_answers) const

@@ -23,15 +23,25 @@
 
 int main()
 {
-    log2word::core c("../data/all.txt","../data/answers.txt");
+    log2word::core c("data/all.txt","data/answers.txt");
     {
         log2word::common::timing::scoped_timer st{};
         c.pre_calculate(false);
         std::cout << "(precalculated in " << st.ms() << " ms)\n" << std::endl;
     }
 
-    while (true)
+    // while (true)
+    // {
+    //     auto gu = log2word::solver::game_user(c);
+    // }
+
+    //for (int i = 0; i < c.get_word_list().size(); i++)
+    //{
+        std::cout << c.get_answer_list()[343]<<std::endl;
     {
-        auto gu = log2word::solver::game_user(c);
+        log2word::common::timing::scoped_timer _t("####",true);
+        auto g = log2word::solver::game_simulate(c,434);
+        std::cout << " : "<< g.tries() << std::endl;
     }
+    //}
 }
