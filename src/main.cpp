@@ -30,10 +30,10 @@ int main()
         std::cout << "(precalculated in " << st.ms() << " ms)\n" << std::endl;
     }
 
-    // while (true)
-    // {
-    //     auto gu = log2word::solver::game_user(c);
-    // }
+    while (true)
+    {
+        auto gu = log2word::solver::game_user(c);
+    }
 
     //for (int i = 0; i < c.get_word_list().size(); i++)
     //{
