@@ -38,7 +38,7 @@ namespace log2word
 
             [[nodiscard]] std::string to_string() const
             {
-                return "[" + std::to_string(score) + "]"; // | " + std::to_string(entropy);
+                return "[" + std::to_string(score) + "] e=" + std::to_string(entropy); // | " + std::to_string(entropy);
             }
 
             [[nodiscard]] static bool better(const word_score &a, const word_score &b)
