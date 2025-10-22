@@ -23,16 +23,22 @@
 
 int main()
 {
-    log2word::core c("data/all.txt","data/answers.txt");
+    log2word::core c("../data/all.txt","../data/answers.txt");
     {
         log2word::common::timing::scoped_timer st{};
         c.pre_calculate(false);
         std::cout << "(precalculated in " << st.ms() << " ms)\n" << std::endl;
     }
 
+    log2word::feedback _("probe","sauce");
+    log2word::feedback _2("slunk","sauce");
+    _.debug_output();
+    std::cout << _.get_bits() << std::endl;
+    std::cout << _2.get_bits() << std::endl;
+
     while (true)
     {
-        auto gu = log2word::solver::game_user(c);
+        auto gu = log2word::solver::game_user(c,24);
     }
 
     //for (int i = 0; i < c.get_word_list().size(); i++)

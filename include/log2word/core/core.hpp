@@ -222,7 +222,7 @@ namespace log2word
         [[nodiscard]] double compute_expected_future_entropy(
             const size_t guess,
             const std::vector<size_t>& possible_answers,
-            const size_t sample_limit = 1
+            const size_t sample_limit = 8
         ) const
         {
             const auto counts = compute_feedback_counts(guess, possible_answers);
@@ -262,7 +262,6 @@ namespace log2word
             std::vector<word_score> scores(size);
 
             const bool only_answers = possible_answers.size() <= 24;
-            const bool do_future_entropy = (possible_answers.size() <= 128);
             if (!only_answers)
             {
                 common::threading::parallel_for(size,
@@ -270,14 +269,7 @@ namespace log2word
                 {
                     for (size_t guess_idx = start; guess_idx < end; guess_idx++)
                     {
-                        double H = compute_entropy(guess_idx, possible_answers);
-                        double future_H = 0.0;
-
-                        if (do_future_entropy)
-                            future_H = compute_expected_future_entropy(guess_idx, possible_answers);
-
-                        scores[guess_idx].entropy = H;
-                        scores[guess_idx].score = H - 1 * future_H;
+                        scores[guess_idx] = compute_score(guess_idx, possible_answers);
                     }
                 });
 
@@ -287,14 +279,7 @@ namespace log2word
             {
                 for (const auto guess_idx : possible_answers)
                 {
-                    double H = compute_entropy(guess_idx, possible_answers);
-                    double future_H = 0.0;
-
-                    if (do_future_entropy)
-                        future_H = compute_expected_future_entropy(guess_idx, possible_answers);
-
-                    scores[guess_idx].entropy = H;
-                    scores[guess_idx].score = H - 1 * future_H;
+                    scores[guess_idx] = compute_score(guess_idx, possible_answers);
                 }
 
                 return scores;
@@ -305,22 +290,32 @@ namespace log2word
             const size_t index,
             const std::vector<size_t>& possible_answers) const
         {
-            double H = compute_entropy(index, possible_answers);
-            double future_H = 0.0;
+            const size_t remaining = possible_answers.size();
 
-            if (possible_answers.size() <= 24)
+            double H = compute_entropy(index, possible_answers);
+
+            double future_H = 0.0;
+            if (remaining > 1 && remaining <= 32)
                 future_H = compute_expected_future_entropy(index, possible_answers);
 
-            word_score s;
-            s.entropy = H;
-            s.score = H - 1 * future_H;
-            return s;
+            double score = 0.0;
+            if (remaining == 1)
+            {
+                score = 1.0;
+            }
+            else
+            {
+                score = (H) + (future_H); // (H) / (future_H)
+            }
+
+            return word_score{H, score};
         }
 
         [[nodiscard]] double compute_entropy(const size_t guess, const std::vector<size_t>& possible_answers) const
         {
             const auto counts = compute_feedback_counts(guess, possible_answers);
-            return compute_entropy_from_counts(counts, possible_answers.size());
+            const double e = compute_entropy_from_counts(counts, possible_answers.size());
+            return e;
         }
 
         void limit_guesses(const size_t guess, const feedback& feedback_received, std::vector<size_t>& possible_answers) const
@@ -362,7 +357,7 @@ namespace log2word
             const size_t total)
         {
             double entropy = 0.0;
-            const double inv_total = 1.0 / (double)total;
+            const double inv_total = 1.0 / static_cast<double>(total);
 
             for (const int c : counts)
             {
@@ -380,7 +375,7 @@ namespace log2word
             const bool is_answer)
         {
             double expected = 0.0;
-            const double inv_total = 1.0 / (double)total;
+            const double inv_total = 1.0 / static_cast<double>(total);
 
             for (const int c : counts)
             {

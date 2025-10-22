@@ -44,7 +44,10 @@ namespace log2word::solver
 
         log2word::feedback fb{};
         for (int i = 0; i < 5; i++)
-            fb.set(i, feedback::feedback_type_from_char(std::tolower(input[i])));
+        {
+            const char c = static_cast<char>(std::tolower(input[i]));
+            fb.set(i, log2word::feedback::feedback_type_from_char(c));
+        }
 
         return fb;
     }
@@ -115,6 +118,13 @@ namespace log2word::solver
 
             log2word::feedback fb = get_user_feedback();
             core.limit_guesses(best_guess,fb,possible_answers);
+            if (possible_answers.size() < 50)
+            {
+                for (int i = 0; i < possible_answers.size(); i++)
+                {
+                    std::cout << core.get_word(possible_answers[i]) << "\n";
+                }
+            }
 
             if (fb())
             {
